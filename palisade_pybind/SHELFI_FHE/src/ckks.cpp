@@ -62,8 +62,8 @@ int CKKS::genCryptoContextAndKeyGen() {
         unsigned long int size = data_array.size();
         auto learner_Data = data_array.data();
 
-        vector<Ciphertext<DCRTPoly>> ciphertext_data((int)((size + batchSize) / batchSize));
-
+        int cipherSize = ceil(size / (double)batchSize);
+        vector<Ciphertext<DCRTPoly>> ciphertext_data(cipherSize);
         if (size > (unsigned long int) batchSize) {
 
           //int j = 0;
@@ -108,7 +108,8 @@ int CKKS::genCryptoContextAndKeyGen() {
 
 
     unsigned long int size = learner_Data.size();
-    vector<Ciphertext<DCRTPoly>> ciphertext_data((int)((size + batchSize) / batchSize));
+    int cipherSize = ceil(size / (double)batchSize);
+    vector<Ciphertext<DCRTPoly>> ciphertext_data(cipherSize);
 
     
 
