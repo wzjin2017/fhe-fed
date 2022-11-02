@@ -18,10 +18,6 @@ RUN apt-get update && apt-get install -y python3.9 python3-distutils python3-pip
 RUN pip3 install pybind11
 
 WORKDIR /root/sfl
-RUN git clone https://github.com/weidai11/cryptopp.git
-RUN cd cryptopp && make && make test && make install
-
-WORKDIR /root/sfl
 RUN git clone -b release-v1.11.2 https://gitlab.com/palisade/palisade-development.git
 RUN mkdir -p /root/sfl/palisade-development/build
 WORKDIR /root/sfl/palisade-development/build

@@ -1,46 +1,17 @@
-# he-encryption-shelfi
-
-Benchmarking for various crypto-systems (e.g. Paillier, CKKS) integrated with a federated learning architecture
-
-`FHE_CPP`: cpp only implementation for CKKS 
-
-`Pailler_Offline_Online_CPP`: cpp only implementation for Pailler (offline + online)
-
-`palisade_pybind`: implementation of private weighted average integrated with underlying schemes with python wrapper and bindings. 
-
+# FHE-Based FedAvg
+Secure FedAvg Functionality using Fully Homomorphic Encryption (CKKS)
 ### Dependencies (tested in Ubuntu)
+Using Docker env with Dockerfile in this repo or install all dependencies yourself as bellow:
+
 - `PALISADE`: a lattice-based homomorphic encryption library in C++. Follow the instructions on https://gitlab.com/palisade/palisade-release to download, compile, and install the library. Make sure to run `make install` in the user-created `\build` directory for a complete installation. 
 
-- `Crypto++`: a Linux cryptographic library to provide various functionality (we primarily utilize this for our Pailler implementation). Follow the instructions https://github.com/weidai11/cryptopp and make sure to run `make install` in the root dir. of the library for a complete install.
-
 - `pybind-11`: pip install pybind11, make sure to have have `python3` and `cmake` already installed. 
-- `GMP`: install gmp using the following commands:
-
-  PREFIX=/usr/local  # Change this to install GMP wherever you want.
-
-  curl -fLO https://gmplib.org/download/gmp/gmp-6.2.1.tar.xz
-
-  tar -xf gmp-6.2.1.tar.xz
-
-  cd gmp-6.2.1
-
-  ./configure --prefix=$PREFIX
-
-  make all
-
-  make install
-
-  cp gmpxx.h $PREFIX/include
-
-  export GMP_INC=$PREFIX/include
-
-  export GMP_LIB=$PREFIX/lib
 
 - `Clang`: install clang and set it as the default compiler
 
 `palisade_pybind` folder contains the implementation of weighted average operation with python bindings.
 
-### To Run
+## To Run After Self-Installing Dependencies
 
 go to the `palisade_pybind/SHELFI_FHE/src` folder and run `pip install ../`
 

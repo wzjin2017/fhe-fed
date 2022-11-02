@@ -1,3 +1,0 @@
-/home/parallels/Desktop/he-encryption-shelfi/palisade_shelfi_interface/build/CMakeFiles/rebuild_cache.dir
-/home/parallels/Desktop/he-encryption-shelfi/palisade_shelfi_interface/build/CMakeFiles/edit_cache.dir
-/home/parallels/Desktop/he-encryption-shelfi/palisade_shelfi_interface/build/CMakeFiles/SHELFI_FHE.dir
