@@ -13,9 +13,7 @@ scalingFactors = [0.5,0.2,0.3]
 
 FHE_helper = m.CKKS("ckks", 4096, 52, "resources/cryptoparams/");
 #FHE_helper = m.CKKS();
-
 #FHE_helper.genCryptoContextAndKeyGen()
-
 FHE_helper.loadCryptoParams()
 
 

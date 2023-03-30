@@ -1,0 +1,34 @@
+Model #0
+File Size: 668949
+Model #1
+File Size: 30089716
+Model #2
+File Size: 7687223
+Model #3
+File Size: 9361226
+Model #4
+File Size: 68858960
+Model #5
+File Size: 137722599
+Model #6
+File Size: 321921449
+Model #7
+File Size: 987154434
+Model #8
+File Size: 1838229588
+Model #9
+File Size: 2170521131
+Model #10
+File Size: 4643220301
+Model #11
+File Size: 7082031495
+Model #12
+File Size: 8966672437
+Model #0
+File Size: 669033
+Model #1
+File Size: 30095673
+Model #2
+File Size: 7688923
+Model #3
+File Size: 9360452
