@@ -1,0 +1,3 @@
+/home/jinweizhao/disk2/Github/fhe-fed/code/mkhe/build/CMakeFiles/mk-test.dir
+/home/jinweizhao/disk2/Github/fhe-fed/code/mkhe/build/CMakeFiles/edit_cache.dir
+/home/jinweizhao/disk2/Github/fhe-fed/code/mkhe/build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wall -Werror -O3  -DPALISADE_VERSION=1.11.2 -Wno-parentheses -fopenmp -fopenmp "CMakeFiles/mk-test.dir/mkhe.cpp.o" -o mk-test   -L/usr/local/lib  -Wl,-rpath,/usr/local/lib /usr/local/lib/libPALISADEpke.so.1.11.2 /usr/local/lib/libPALISADEbinfhe.so.1.11.2 -fopenmp /usr/local/lib/libPALISADEcore.so.1.11.2 -fopenmp 
