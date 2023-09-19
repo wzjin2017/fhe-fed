@@ -417,4 +417,16 @@ CMakeFiles/mk-test.dir/mkhe.cpp.o
  /usr/local/include/palisade/cereal/types/map.hpp
  /usr/local/include/palisade/cereal/types/concepts/pair_associative_container.hpp
  /usr/local/include/palisade/cereal/types/vector.hpp
+ /usr/local/include/palisade/pke/ciphertext-ser.h
+ /usr/local/include/palisade/pke/metadata-ser.h
+ /usr/local/include/palisade/pke/cryptocontext-ser.h
+ /usr/local/include/palisade/pke/scheme/ckks/ckks-ser.h
+ /usr/local/include/palisade/pke/pubkeylp-ser.h
+ /usr/include/unistd.h
+ /usr/include/x86_64-linux-gnu/bits/posix_opt.h
+ /usr/include/x86_64-linux-gnu/bits/environments.h
+ /usr/include/x86_64-linux-gnu/bits/confname.h
+ /usr/include/x86_64-linux-gnu/bits/getopt_posix.h
+ /usr/include/x86_64-linux-gnu/bits/getopt_core.h
+ /usr/include/x86_64-linux-gnu/bits/unistd.h
 

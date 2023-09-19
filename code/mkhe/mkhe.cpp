@@ -37,14 +37,26 @@
 using namespace std;
 using namespace lbcrypto;
 
+template <typename Element>
+class CryptoContextFactory;
+
+template <typename Element>
+class CryptoContextImpl;
+
+template <typename Element>
+using CryptoContext = shared_ptr<CryptoContextImpl<Element>>;
+
 void RunSingleKeyCKKS(int model_size);
-void RunCKKS(int model_size);
+void RunCKKS(int model_size, int client_size);
 
 int main(int argc, char *argv[]) {
         // Using std::stoi (string to integer)
 
 int model_size = std::stoi(argv[1]);
 std::cout << "Size of the model: " << model_size << std::endl;
+
+int client_size = std::stoi(argv[2]);
+std::cout << "Size of the clients: " << client_size << std::endl;
 
   std::cout << "\n=================RUNNING FOR Single Key CKKS====================="
             << std::endl;
@@ -66,7 +78,7 @@ std::cout << "Size of the model: " << model_size << std::endl;
   std::cout << "\n=================RUNNING FOR CKKS====================="
             << std::endl;
 
-  RunCKKS(model_size);
+  RunCKKS(model_size, client_size);
 
           // Stop the timer
     auto end_time1 = std::chrono::high_resolution_clock::now();
@@ -173,9 +185,24 @@ void RunSingleKeyCKKS(int model_size) {
 }
 
 
-void RunCKKS(int model_size) {
-  usint init_size = 4;
-  usint dcrtBits = 50;
+void RunCKKS(int model_size, int client_size) {
+//    * @param m Cyclotomic order. Must be a power of 2.
+//  * @param init_size Number of co-primes comprising the ciphertext modulus.
+//  * 			  It is equal to the desired depth of the computation.
+//  * @param dcrtBits Size of each co-prime in bits. Should fit into a
+//  * 			 machine word, i.e., less than 64.
+//  * @param p Scaling parameter 2^p. p should usually be equal to dcrtBits.
+//  * @param relinWin The bit decomposition count used in relinearization.
+//  * 			 Use 0 to go with max possible. Use small values (3-4?)
+//  * 			 if you need rotations before any multiplications.
+//  * @param batchSize The length of the packed vectors to be used with CKKS.
+//  * @param mode (e.g., RLWE or OPTIMIZED)
+//  * @param ksTech key switching technique to use (e.g., GHS or BV)
+//  * @param rsTech rescaling technique to use (e.g., APPROXRESCALE or
+//  * EXACTRESCALE)
+
+  usint init_size = 3;
+  usint dcrtBits = 51;
   usint batchSize = 4096;
 
   CryptoContext<DCRTPoly> cc =
@@ -211,84 +238,83 @@ void RunCKKS(int model_size) {
                         .ConvertToDouble())
             << std::endl;
 
-  // Initialize Public Key Containers
-  LPKeyPair<DCRTPoly> kp1;
-  LPKeyPair<DCRTPoly> kp2;
 
-  LPKeyPair<DCRTPoly> kpMultiparty;
 
   ////////////////////////////////////////////////////////////
   // Perform Key Generation Operation
   ////////////////////////////////////////////////////////////
 
-  std::cout << "Running key generation (used for source data)..." << std::endl;
+  // Initialize Public Key Containers
+  vector<LPKeyPair<DCRTPoly>> kp(client_size);
+  vector<shared_ptr<std::map<usint, LPEvalKey<Element>>>> evalSumKeys(client_size);
+  vector<LPEvalKey<Element>> evalMultKeys(client_size);
+  LPEvalKey<Element> evalMidMultKey;
+  LPEvalKey<Element> evalMultFinal;
+
+
+  shared_ptr<std::map<usint, LPEvalKey<Element>>> evalSumKeysJoin;
+
+
+  LPKeyPair<DCRTPoly> kpMultiparty;
+
+  
+  
+ std::cout << "Running key generation (used for source data)..." << std::endl;
 
   // Round 1 (party A)
 
   std::cout << "Round 1 (party A) started." << std::endl;
 
-  kp1 = cc->KeyGen();
+  kp[0] = cc->KeyGen();
 
   // Generate evalmult key part for A
-  auto evalMultKey = cc->KeySwitchGen(kp1.secretKey, kp1.secretKey);
+  evalMultKeys[0] = cc->KeySwitchGen(kp[0].secretKey, kp[0].secretKey);
 
   // Generate evalsum key part for A
-  cc->EvalSumKeyGen(kp1.secretKey);
-  auto evalSumKeys = std::make_shared<std::map<usint, LPEvalKey<DCRTPoly>>>(
-      cc->GetEvalSumKeyMap(kp1.secretKey->GetKeyTag()));
+  cc->EvalSumKeyGen(kp[0].secretKey);
+  evalSumKeys[0] = std::make_shared<std::map<usint, LPEvalKey<DCRTPoly>>>(
+      cc->GetEvalSumKeyMap(kp[0].secretKey->GetKeyTag()));
 
   std::cout << "Round 1 of key generation completed." << std::endl;
 
-  // Round 2 (party B)
 
-  std::cout << "Round 2 (party B) started." << std::endl;
+  for (int i = 1; i < kp.size(); i++) {
+    kp[i] = cc->MultipartyKeyGen(kp[i-1].publicKey);
+    
+    evalSumKeys[i] = cc->MultiEvalSumKeyGen(kp[i].secretKey, evalSumKeys[i-1],
+                                             kp[i].publicKey->GetKeyTag());
 
-  std::cout << "Joint public key for (s_a + s_b) is generated..." << std::endl;
-  kp2 = cc->MultipartyKeyGen(kp1.publicKey);
+    if (i == 1) {
+      evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys[i-1], evalSumKeys[i],
+                                                 kp[i].publicKey->GetKeyTag());
+    } else {
+      evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeysJoin, evalSumKeys[i],
+                                                 kp[i].publicKey->GetKeyTag());
+    }
 
-  auto evalMultKey2 =
-      cc->MultiKeySwitchGen(kp2.secretKey, kp2.secretKey, evalMultKey);
-
-  std::cout
-      << "Joint evaluation multiplication key for (s_a + s_b) is generated..."
-      << std::endl;
-  auto evalMultAB = cc->MultiAddEvalKeys(evalMultKey, evalMultKey2,
+    evalMultKeys[i] =
+      cc->MultiKeySwitchGen(kp[i].secretKey, kp[i].secretKey, evalMultKeys[i-1]);
+    if (i==1) {
+      evalMidMultKey = cc->MultiAddEvalKeys(evalMultKeys[i-1], evalMultKeys[i],
                                          kp2.publicKey->GetKeyTag());
-
-  std::cout << "Joint evaluation multiplication key (s_a + s_b) is transformed "
-               "into s_b*(s_a + s_b)..."
-            << std::endl;
-  auto evalMultBAB = cc->MultiMultEvalKey(evalMultAB, kp2.secretKey,
-                                          kp2.publicKey->GetKeyTag());
-
-  auto evalSumKeysB = cc->MultiEvalSumKeyGen(kp2.secretKey, evalSumKeys,
-                                             kp2.publicKey->GetKeyTag());
-
-  std::cout << "Joint evaluation summation key for (s_a + s_b) is generated..."
-            << std::endl;
-  auto evalSumKeysJoin = cc->MultiAddEvalSumKeys(evalSumKeys, evalSumKeysB,
-                                                 kp2.publicKey->GetKeyTag());
-
+    } else {
+      evalMidMultKey = cc->MultiAddEvalKeys(evalMidMultKey, evalMultKeys[i],
+                                         kp2.publicKey->GetKeyTag());
+    }
+  }
   cc->InsertEvalSumKey(evalSumKeysJoin);
 
-  std::cout << "Round 2 of key generation completed." << std::endl;
+  evalMultFinal = cc->MultiMultEvalKey(evalMidMultKey, kp[0].secretKey,
+                                          kp[0].publicKey->GetKeyTag());
+  for (int i = 1; i < kp.size(); i++) {
+    // b * (a + b + c)
+    auto evalMultRound3 = cc->MultiMultEvalKey(evalMidMultKey, kp[i].secretKey,
+                                          kp[i].publicKey->GetKeyTag());
 
-  std::cout << "Round 3 (party A) started." << std::endl;
-
-  std::cout << "Joint key (s_a + s_b) is transformed into s_a*(s_a + s_b)..."
-            << std::endl;
-  auto evalMultAAB = cc->MultiMultEvalKey(evalMultAB, kp1.secretKey,
-                                          kp2.publicKey->GetKeyTag());
-
-  std::cout << "Computing the final evaluation multiplication key for (s_a + "
-               "s_b)*(s_a + s_b)..."
-            << std::endl;
-  auto evalMultFinal = cc->MultiAddEvalMultKeys(evalMultAAB, evalMultBAB,
-                                                evalMultAB->GetKeyTag());
-
+    auto evalMultFinal = cc->MultiAddEvalMultKeys(evalMultFinal, evalMultRound3,
+                                                evalMidMultKey->GetKeyTag());
+  }
   cc->InsertEvalMultKey({evalMultFinal});
-
-  std::cout << "Round 3 of key generation completed." << std::endl;
 
   ////////////////////////////////////////////////////////////
   // Encode source data
@@ -319,8 +345,8 @@ void RunCKKS(int model_size) {
   Ciphertext<DCRTPoly> ciphertext1;
   Ciphertext<DCRTPoly> ciphertext2;
 
-  ciphertext1 = cc->Encrypt(kp2.publicKey, plaintext1);
-  ciphertext2 = cc->Encrypt(kp2.publicKey, plaintext2);
+  ciphertext1 = cc->Encrypt(kp[client_size-1].publicKey, plaintext1);
+  ciphertext2 = cc->Encrypt(kp[client_size-1].publicKey, plaintext2);
 
     Serial::SerializeToFile("TCT1.txt", ciphertext1,
                           SerType::BINARY);
@@ -363,18 +389,22 @@ void RunCKKS(int model_size) {
       cryptoParams->GetElementParams();
 
   // distributed decryption
-
-  auto ciphertextPartial1 =
-      cc->MultipartyDecryptLead(kp1.secretKey, {ciphertextAdd12});
-
-  auto ciphertextPartial2 =
-      cc->MultipartyDecryptMain(kp2.secretKey, {ciphertextAdd12});
-
+  vector<Ciphertext<DCRTPoly>> ciphertextPartial(client_size);
   vector<Ciphertext<DCRTPoly>> partialCiphertextVec;
-  partialCiphertextVec.push_back(ciphertextPartial1[0]);
-  partialCiphertextVec.push_back(ciphertextPartial2[0]);
+
+  for (int i = 0; i < kp.size(); i++) {
+    ciphertextPartial[i] =
+      cc->MultipartyDecryptLead(kp[i].secretKey, {ciphertextAdd12});
+    
+    partialCiphertextVec.push_back(ciphertextPartial[i][0]);
+  }
 
   cc->MultipartyDecryptFusion(partialCiphertextVec, &plaintextMultipartyNew);
+
+  plaintextMultipartyNew->SetLength(plaintext1->GetLength());
+
+  std::cout << "Estimated precision in bits: " << plaintextMultipartyNew->GetLogPrecision()
+            << std::endl;
 
 //   cout << "\n Original Plaintext: \n" << endl;
 //   cout << plaintext1 << endl;
